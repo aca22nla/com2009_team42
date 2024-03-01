@@ -31,7 +31,7 @@ class Circle():
         self.CIRCUMFERENCE = 2 * pi * self.RADIUS
         self.linear_vel = 0.26
         self.angular_vel = self.linear_vel / self.RADIUS
-        self.time_for_loop = self.CIRCUMFERENCE / self.linear_vel + 0.05 #added time for bug fix
+        self.time_for_loop = self.CIRCUMFERENCE / self.linear_vel + 0.15 #added time for bug
 
         #shutdown
         self.ctrl_c = False 
@@ -59,7 +59,7 @@ class Circle():
         
         if self.counter <= 0:
             self.counter = 0
-            print(f"x={pos_x-self.initial_pos_y:6.2f} [m],  y={pos_y-self.initial_pos_y:6.2f} [m],  yaw={yaw:5.1f} [degrees].")
+            print(f"x={pos_x-self.initial_pos_y:.2f} [m], y={pos_y-self.initial_pos_y:.2f} [m], yaw={yaw:.1f} [degrees].")
         else:
             self.counter -= 1
 

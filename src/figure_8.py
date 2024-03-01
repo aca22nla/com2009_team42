@@ -20,7 +20,7 @@ class Circle():
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)#sends info (instructions, vel, etc) to bot
         self.sub = rospy.Subscriber("odom", Odometry, self.callback)#gets info (odometry) from bot
         rospy.init_node(self.node_name, anonymous=True)
-        self.rate = rospy.Rate(10) 
+        self.rate = rospy.Rate(1) 
         
         self.counter = 0 # for odometry data
         self.initial_pos_x = None # starting pos of bot 
@@ -29,9 +29,15 @@ class Circle():
 
         self.RADIUS = 0.5  # Radius of the circle (meters)
         self.CIRCUMFERENCE = 2 * pi * self.RADIUS
-        self.linear_vel = 0.26
+        # self.linear_vel = 0.26
+        # self.angular_vel = self.linear_vel / self.RADIUS
+        # self.time_for_loop = self.CIRCUMFERENCE / self.linear_vel + 0.15 #added time for bug
+        self.time_for_loop = 31
+        self.linear_vel = self.CIRCUMFERENCE / self.time_for_loop
         self.angular_vel = self.linear_vel / self.RADIUS
-        self.time_for_loop = self.CIRCUMFERENCE / self.linear_vel + 0.15 #added time for bug
+
+
+        self.elapsed_time = 0
 
         #shutdown
         self.ctrl_c = False 
@@ -92,7 +98,7 @@ class Circle():
 
     def main(self):
         start_time = rospy.Time.now().to_sec()
-        elapsed_time = 0
+        elapsed_time = self.elapsed_time
         while elapsed_time <= self.time_for_loop and not self.ctrl_c:
             current_time = rospy.Time.now().to_sec()  # Get the current time
             elapsed_time = current_time - start_time

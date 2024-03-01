@@ -18,7 +18,7 @@ class Circle():
 
         self.sub = rospy.Subscriber("odom", Odometry, self.callback)
 
-        self.ctrl_c = False 
+        self.ctrl_c = False
         rospy.on_shutdown(self.shutdownhook)
 
         self.counter = 0

@@ -8,6 +8,7 @@ from tf.transformations import euler_from_quaternion
 
 from math import pi
 
+import time
 
 class Circle():
 
@@ -17,9 +18,9 @@ class Circle():
         self.topic_name = "/cmd_vel"
 
         #--initialisation and functions
+        rospy.init_node(self.node_name, anonymous=True)
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)#sends info (instructions, vel, etc) to bot
         self.sub = rospy.Subscriber("odom", Odometry, self.callback)#gets info (odometry) from bot
-        rospy.init_node(self.node_name, anonymous=True)
         self.rate = rospy.Rate(10) 
         
         self.counter = 0 # for odometry data
@@ -64,7 +65,7 @@ class Circle():
 
         
         if self.counter <= 0:
-            self.counter = 0
+            self.counter = 5
             print(f"x={pos_x-self.initial_pos_y:.2f} [m], y={pos_y-self.initial_pos_y:.2f} [m], yaw={yaw:.1f} [degrees].")
         else:
             self.counter -= 1

@@ -20,7 +20,7 @@ class Circle():
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)#sends info (instructions, vel, etc) to bot
         self.sub = rospy.Subscriber("odom", Odometry, self.callback)#gets info (odometry) from bot
         rospy.init_node(self.node_name, anonymous=True)
-        self.rate = rospy.Rate(1) 
+        self.rate = rospy.Rate(10) 
         
         self.counter = 0 # for odometry data
         self.initial_pos_x = None # starting pos of bot 

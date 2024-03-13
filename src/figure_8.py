@@ -29,11 +29,8 @@ class Circle():
         self.initial_pos_z = None
 
         self.RADIUS = 0.5  # Radius of the circle (meters)
-        self.CIRCUMFERENCE = 2 * pi * self.RADIUS
-        # self.linear_vel = 0.26
-        # self.angular_vel = self.linear_vel / self.RADIUS
-        # self.time_for_loop = self.CIRCUMFERENCE / self.linear_vel + 0.15 #added time for bug
-        self.time_for_loop = 31
+        self.CIRCUMFERENCE = 2 * pi * self.RADIUS #TODO: If second loop is slightly off path try adding 0.02 to the end of this
+        self.time_for_loop = 30
         self.linear_vel = self.CIRCUMFERENCE / self.time_for_loop
         self.angular_vel = self.linear_vel / self.RADIUS
 
@@ -83,32 +80,31 @@ class Circle():
         stop_cmd.angular.z = 0 # rad/s
         self.pub.publish(stop_cmd)
 
-    def first_loop(self):
+    def loop(self, loop_number):
         move_cmd = Twist()
 
-        move_cmd.linear.x = self.linear_vel # m/s
-        move_cmd.angular.z = move_cmd.linear.x / self.RADIUS # rad/s
-        self.pub.publish(move_cmd)  # Publish movement command
-
-    def second_loop(self):
-        move_cmd = Twist()
+        n = 1 if loop_number == 1 else -1
 
         move_cmd.linear.x = self.linear_vel # m/s
-        move_cmd.angular.z = -(move_cmd.linear.x / self.RADIUS) # rad/s
+        move_cmd.angular.z = n*(move_cmd.linear.x / self.RADIUS) # rad/s
         self.pub.publish(move_cmd)  # Publish movement command
+        self.rate.sleep()
 
     def main(self):
+
         start_time = rospy.Time.now().to_sec()
         elapsed_time = self.elapsed_time
+
         while elapsed_time <= self.time_for_loop and not self.ctrl_c:
             current_time = rospy.Time.now().to_sec()  # Get the current time
-            elapsed_time = current_time - start_time
-            self.first_loop()
+            elapsed_time = current_time - start_time  # Get the elapsed time
+            self.loop(1)
         print("########_FIRST LOOP DONE_########")
+        
         while elapsed_time > (self.time_for_loop) and elapsed_time <= (2 * self.time_for_loop) and not self.ctrl_c:
             current_time = rospy.Time.now().to_sec()  # Get the current time
             elapsed_time = current_time - start_time
-            self.second_loop()
+            self.loop(2)
         print("########_SECOND LOOP DONE_########")
 
         self.shutdownhook()

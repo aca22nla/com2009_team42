@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="com2009_team42" type="figure_8.py" name="figure_of_8" output="screen">
+  </node>
+</launch>

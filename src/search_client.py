@@ -23,8 +23,6 @@ class ExplorerClient():
         rospy.init_node(node_name)
         self.rate = rospy.Rate(1)
 
-        ## TODO: setup a "simple action client" with a callback function
-        ## and wait for the server to be available...
         self.client = actionlib.SimpleActionClient(action_server_name, 
                     SearchAction)
         self.client.wait_for_server()
@@ -38,7 +36,6 @@ class ExplorerClient():
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled...")
 
-        ## TODO: Print the result here...
         rospy.sleep(1) # wait for the result to come in
         print("RESULT:")
         print(f"  * Action State = {self.client.get_state()}")
@@ -51,8 +48,6 @@ class ExplorerClient():
         self.client.send_goal(self.goal, feedback_cb=self.feedback_callback) 
 
     def main(self):
-        ## TODO: assign values to all goal parameters
-        ## and send the goal to the action server...
         self.send_goal(fwd_vel= 0.05, dist = 0.5) 
         #debug
         print("Goal parameters set successfully:")
@@ -60,8 +55,6 @@ class ExplorerClient():
         print("Approach distance:", self.goal.approach_distance)
         while self.client.get_state() < 2:
             print(f"STATE: Current state code is {self.client.get_state()}")
-            ## TODO: Construct an if statement and cancel the goal if the 
-            ## distance travelled exceeds 2 meters...
             if self.distance > 2:
                 rospy.loginfo("More than 2 meters travelled. Cancelling Goal...")
                 self.client.cancel_goal()
@@ -74,6 +67,5 @@ class ExplorerClient():
         self.action_complete = True
 
 if __name__ == '__main__':
-    ## TODO: Instantiate the node and call the main() method from it...
     node = ExplorerClient()
     node.main()

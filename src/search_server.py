@@ -103,7 +103,7 @@ class RobotExplorer():
                 rospy.sleep(1)  # Pause for 1 second
 
                 # Calculate angular velocity to avoid the obstacle
-                angular_velocity = -1.0  # Turn in the opposite direction
+                angular_velocity = self.calculate_angular_velocity()  # Turn in the opposite direction
                 self.vel_controller.set_move_cmd(0.0, angular_velocity)
                 self.vel_controller.publish()
 

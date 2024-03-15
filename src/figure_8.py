@@ -29,7 +29,7 @@ class Circle():
         self.initial_pos_z = None
 
         self.RADIUS = 0.5  # Radius of the circle (meters)
-        self.CIRCUMFERENCE = 2 * pi * self.RADIUS + 0.1 #TODO: If second loop is slightly off path try adding 0.02 to the end of this
+        self.CIRCUMFERENCE = 2 * pi * self.RADIUS + 0.02 #TODO: If second loop is slightly off path try adding 0.02 to the end of this
         self.time_for_loop = 30
         self.linear_vel = self.CIRCUMFERENCE / self.time_for_loop
         self.angular_vel = self.linear_vel / self.RADIUS

@@ -10,8 +10,6 @@ class ExplorerClient():
     goal = SearchGoal()
 
     def feedback_callback(self, feedback_data: SearchFeedback):
-        ## TODO: get the current distance travelled, from the feedback message
-        ## and assign this to a class variable...
         self.distance = feedback_data.current_distance_travelled
         print(f"FEEDBACK: Current distance travelled: {feedback_data.current_distance_travelled:.1f} meters. ")
 

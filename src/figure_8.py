@@ -29,7 +29,7 @@ class Circle():
         self.initial_pos_z = None
 
         self.RADIUS = 0.5  # Radius of the circle (meters)
-        self.CIRCUMFERENCE = 2 * pi * self.RADIUS + 0.02 #TODO: If second loop is slightly off path try adding 0.02 to the end of this
+        self.CIRCUMFERENCE = 2 * pi * self.RADIUS
         self.time_for_loop = 30
         self.linear_vel = self.CIRCUMFERENCE / self.time_for_loop
         self.angular_vel = self.linear_vel / self.RADIUS
@@ -95,13 +95,13 @@ class Circle():
         start_time = rospy.Time.now().to_sec()
         elapsed_time = self.elapsed_time
 
-        while elapsed_time <= self.time_for_loop and not self.ctrl_c:
+        while elapsed_time <= (self.time_for_loop + 0.5) and not self.ctrl_c:
             current_time = rospy.Time.now().to_sec()  # Get the current time
             elapsed_time = current_time - start_time  # Get the elapsed time
             self.loop(1)
         print("########_FIRST LOOP DONE_########")
         
-        while elapsed_time > (self.time_for_loop) and elapsed_time <= (2 * self.time_for_loop) and not self.ctrl_c:
+        while elapsed_time > (self.time_for_loop + 0.5) and elapsed_time <= (2 * (self.time_for_loop + 0.5)) and not self.ctrl_c:
             current_time = rospy.Time.now().to_sec()  # Get the current time
             elapsed_time = current_time - start_time
             self.loop(2)

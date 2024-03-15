@@ -27,7 +27,7 @@ class RobotExplorer():
         self.tb3_odom = Tb3Odometry()
         self.tb3_lidar = Tb3LaserScan()
 
-        self.min_safe_distance = 0.3
+        self.min_safe_distance = 0.5
         self.max_angular_velocity = radians(45)  # Maximum angular velocity in radians per second
         self.turn_threshold = radians(10)  # Angle threshold for initiating a turn
 
@@ -47,6 +47,8 @@ class RobotExplorer():
             return angular_velocity
         
     def search_area(self):
+        rate = rospy.Rate(10)
+
         while not rospy.is_shutdown():
 
             # Get the robot's current odometry from the Tb3Odometry() class:
@@ -76,13 +78,13 @@ class RobotExplorer():
             self.result.closest_object_angle = self.closest_object_location
             self.result.closest_object_distance = self.closest_object
 
+            rate.sleep()
+
             
 
 
     # The action's "callback function":
     def action_server_launcher(self, goal: SearchGoal):
-        rate = rospy.Rate(10)
-
         # Print the received goal for debugging
         rospy.loginfo(f"Received goal: fwd_velocity={goal.fwd_velocity}, approach_distance={goal.approach_distance}")
 
@@ -112,9 +114,9 @@ class RobotExplorer():
         print(f"Valid goal. Continue action...")
 
         
-        # Start navigating the maze
+        # Start searching the area
         self.search_area()
-        rate.sleep()
+        
 
         while self.closest_object > goal.approach_distance:
             

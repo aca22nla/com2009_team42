@@ -28,7 +28,7 @@ class RobotExplorer():
                                                           self.action_server_launcher, auto_start=False)
         self.actionserver.start()
 
-        self.min_safe_distance = 0.1
+        self.min_safe_distance = 0.3
         self.max_angular_velocity = radians(35)  # Maximum angular velocity in radians per second
         self.turn_threshold = radians(10)  # Angle threshold for initiating a turn
 
@@ -90,6 +90,7 @@ class RobotExplorer():
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
                 rospy.loginfo("Action preempted. Cancelling goal...")
+                self.actionserver.set_preempted(self.result)
                 # Stop the robot
                 self.vel_controller.stop()
                 success = False
@@ -108,7 +109,7 @@ class RobotExplorer():
                 self.vel_controller.set_move_cmd(0.0, angular_velocity)
                 self.vel_controller.publish()
 
-                rospy.sleep(1)  # Turn for 2 seconds
+                rospy.sleep(1)  # Turn for 1 seconds
 
             else:
                 # no obstacle detected, continue exploration
@@ -122,8 +123,8 @@ class RobotExplorer():
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
 
             # update feedback message values and publish feedback:
-            rospy.loginfo(f"Travelled {self.feedback.current_distance_travelled}m")
             self.feedback.current_distance_travelled = self.distance
+            rospy.loginfo(f"Travelled {self.feedback.current_distance_travelled:.2f} m")
             self.actionserver.publish_feedback(self.feedback)
 
             # update all result parameters:

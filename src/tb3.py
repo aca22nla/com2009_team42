@@ -51,6 +51,10 @@ class Tb3LaserScan(object):
         left_arc = scan_data.ranges[0:21]
         right_arc = scan_data.ranges[-20:]
         front_arc = np.array(left_arc[::-1] + right_arc[::-1])
+        replacement_number  = 5
+        for i in range (len(front_arc)):
+            if front_arc[i] == 0:
+                front_arc[i] = replacement_number
         
         self.min_distance = front_arc.min()
         arc_angles = np.arange(-20, 21)

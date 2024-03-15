@@ -11,7 +11,7 @@ class ExplorerClient():
 
     def feedback_callback(self, feedback_data: SearchFeedback):
         self.distance = feedback_data.current_distance_travelled
-        print(f"FEEDBACK: Current distance travelled: {feedback_data.current_distance_travelled:.1f} meters. ")
+        print(f"FEEDBACK: Current distance travelled: {feedback_data.current_distance_travelled:.2f} meters. ")
 
 
     def __init__(self):
@@ -32,7 +32,6 @@ class ExplorerClient():
     def shutdownhook(self):
         if not self.action_complete:
             rospy.logwarn("Received a shutdown request. Cancelling Goal...")
-            ## TODO: cancel the goal request, if this node is shutdown before the action has completed...
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled...")
 
@@ -48,13 +47,7 @@ class ExplorerClient():
         self.client.send_goal(self.goal, feedback_cb=self.feedback_callback) 
 
     def main(self):
-<<<<<<< HEAD
-        ## TODO: assign values to all goal parameters
-        ## and send the goal to the action server...
         self.send_goal(fwd_vel= 0.05, dist = 0.3) 
-=======
-        self.send_goal(fwd_vel= 0.05, dist = 0.5) 
->>>>>>> 1635963ed9f1f231b278af592bb0e0ffb734dc0b
         #debug
         print("Goal parameters set successfully:")
         print("Forward velocity:", self.goal.fwd_velocity)

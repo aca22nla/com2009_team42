@@ -53,7 +53,7 @@ class ExplorerClient():
     def main(self):
         ## TODO: assign values to all goal parameters
         ## and send the goal to the action server...
-        self.send_goal(fwd_vel= 0.05, dist = 0.5) 
+        self.send_goal(fwd_vel= 0.05, dist = 0.3) 
         #debug
         print("Goal parameters set successfully:")
         print("Forward velocity:", self.goal.fwd_velocity)

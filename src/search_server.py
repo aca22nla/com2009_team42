@@ -18,17 +18,18 @@ class RobotExplorer():
         self.server_name = "search_action_server"
         rospy.init_node(self.server_name)
 
-        self.actionserver = actionlib.SimpleActionServer(self.server_name, SearchAction,
-                                                          self.action_server_launcher, auto_start=False)
-        self.actionserver.start()
-
         # functions from the tb3.py module:
         self.vel_controller = Tb3Move()
         self.tb3_odom = Tb3Odometry()
         self.tb3_lidar = Tb3LaserScan()
+        rospy.loginfo("tb3_lidar initialized successfully")
 
-        self.min_safe_distance = 0.5
-        self.max_angular_velocity = radians(45)  # Maximum angular velocity in radians per second
+        self.actionserver = actionlib.SimpleActionServer(self.server_name, SearchAction,
+                                                          self.action_server_launcher, auto_start=False)
+        self.actionserver.start()
+
+        self.min_safe_distance = 0.1
+        self.max_angular_velocity = radians(35)  # Maximum angular velocity in radians per second
         self.turn_threshold = radians(10)  # Angle threshold for initiating a turn
 
         rospy.loginfo("The 'Search Action Server' is active...")

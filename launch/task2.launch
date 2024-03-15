@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="com2009_team42" type="search_server.py" name="search_action_server" output="screen">
+  </node>
+
+  <node pkg="com2009_team42" type="search_client.py" name="search_action_client" output="screen">
+  </node>
+
+</launch>

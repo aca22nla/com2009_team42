@@ -59,9 +59,15 @@ class ColourSearch():
         crop_img = cv_img[crop_y:crop_y+crop_height, crop_x:crop_x+crop_width]
         hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
 
-        lower = (115, 224, 100)
-        upper = (130, 255, 255)
-        mask = cv2.inRange(hsv_img, lower, upper)
+        lower = [(115, 224, 100), (50, 150, 100), (0, 185, 100), (75, 150, 100)]
+        upper = [(130, 255, 255), (65, 255, 255), (10, 255, 255), (100, 255, 255)]
+        
+        for i in range(4):
+            if i == 0:
+                mask = cv2.inRange(hsv_img, lower[i], upper[i])
+            else:
+                mask += cv2.inRange(hsv_img, lower[i], upper[i])
+
         res = cv2.bitwise_and(crop_img, crop_img, mask = mask)
 
         m = cv2.moments(mask)

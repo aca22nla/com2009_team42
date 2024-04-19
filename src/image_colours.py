@@ -16,6 +16,8 @@ cli.add_argument("Path", metavar="path", type=str, help="Path to the image file"
 args = cli.parse_args()
 
 img = cv2.imread(args.Path)
+print(args.Path)
+print(np.shape(img))
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 if os.path.getsize(args.Path) > 100000:

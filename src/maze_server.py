@@ -27,7 +27,7 @@ class MazeActionServer():
                                                           self.action_server_launcher, auto_start=False)
         self.actionserver.start()
 
-        self.min_safe_distance = 0.3
+        self.min_safe_distance = 0.35
         self.max_angular_velocity = radians(35)  # Maximum angular velocity in radians per second
         self.turn_threshold = radians(10)  # Angle threshold for initiating a turn
 

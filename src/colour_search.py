@@ -19,7 +19,7 @@ class ColourSearch():
         node_name = "turn_and_face"
         rospy.init_node(node_name)
 
-        self.camera_subscriber = rospy.Subscriber("/camera/rgb/image_raw",
+        self.camera_subscriber = rospy.Subscriber("/camera/color/image_raw",
             Image, self.camera_callback)
         self.cvbridge_interface = CvBridge()
 
@@ -51,7 +51,7 @@ class ColourSearch():
             print(e)
         
         height, width, _ = cv_img.shape
-        crop_width = width - 800
+        crop_width = width - 600
         crop_height = 400
         crop_x = int((width/2) - (crop_width/2))
         crop_y = int((height/2) - (crop_height/2))
@@ -59,8 +59,8 @@ class ColourSearch():
         crop_img = cv_img[crop_y:crop_y+crop_height, crop_x:crop_x+crop_width]
         hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
 
-        lower = [(115, 224, 100), (50, 150, 100), (0, 185, 100), (75, 150, 100)]
-        upper = [(130, 255, 255), (65, 255, 255), (10, 255, 255), (100, 255, 255)]
+        lower = [(100, 200, 100), (22, 170, 100), (0, 185, 100), (82, 180, 100)] #blue, yellow, red, green
+        upper = [(107, 255, 255), (29, 250, 255), (10, 250, 255), (93, 255, 255)]
         
         for i in range(4):
             if i == 0:

@@ -74,7 +74,7 @@ def camera_cb(img_data):
 
         waiting_for_image = False
 
-rospy.Subscriber("/camera/rgb/image_raw", Image, camera_cb) 
+rospy.Subscriber("/camera/color/image_raw", Image, camera_cb) 
 
 while waiting_for_image: 
     rate.sleep()

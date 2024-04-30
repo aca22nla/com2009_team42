@@ -86,7 +86,11 @@ class RobotExplorer():
             self.posy0 = self.tb3_odom.posy
             # Get information about objects up ahead from the Tb3LaserScan() class:
             self.closest_object = self.tb3_lidar.subsets.front #distance
-            self.closest_object_location = self.tb3_lidar.closest_object_position #angle
+            # self.closest_object_location = self.tb3_lidar.closest_object_position #angle
+
+            min_distance_index = self.tb3_lidar.subsets.frontArray.index(min(self.tb3_lidar.subsets.frontArray))
+            angle_increment = 0.5
+            self.closest_object_location = (min_distance_index - len(self.tb3_lidar.subsets.frontArray) / 2) * angle_increment
             
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
@@ -107,8 +111,8 @@ class RobotExplorer():
 
                 # Calculate angular velocity to avoid the obstacle
                 angular_velocity = self.calculate_angular_velocity()  # Turn in the opposite direction
-                self.vel_controller.set_move_cmd(0.0, angular_velocity)
-                self.vel_controller.publish()
+                self.vel_controller.set_velocity(linear=0.0, angular=angular_velocity)
+                self.vel_controller.publish_velocity()
 
                 rospy.sleep(1)  # Turn for 1 seconds
 
@@ -116,9 +120,9 @@ class RobotExplorer():
                 # no obstacle detected, continue exploration
                 angular_velocity = self.calculate_angular_velocity()
                 # Set angular velocity to navigate the robot
-                self.vel_controller.set_move_cmd(0.1, angular_velocity)
+                self.vel_controller.set_velocity(linear=0.1, angular=angular_velocity)
                 # Publish velocity command
-                self.vel_controller.publish()
+                self.vel_controller.publish_velocity()
 
             # determine how far the robot has travelled so far:
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))

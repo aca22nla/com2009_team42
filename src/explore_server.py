@@ -29,7 +29,7 @@ class RobotExplorer():
                                                           self.action_server_launcher, auto_start=False)
         self.actionserver.start()
 
-        self.min_safe_distance = 0.5
+        self.min_safe_distance = 0.4
         self.max_angular_velocity = math.radians(35)  # Maximum angular velocity in radians per second
         self.turn_threshold = math.radians(10)  # Angle threshold for initiating a turn
 
@@ -41,7 +41,7 @@ class RobotExplorer():
         orientation_difference = (orientation_difference + math.pi) % (2 * math.pi) - math.pi
         
         # Calculate angular velocity based on the orientation difference
-        return orientation_difference * 0.5  # Adjust the coefficient as needed
+        return orientation_difference  # Adjust the coefficient as needed
 
 
     # def calculate_angular_velocity(self):
@@ -58,7 +58,7 @@ class RobotExplorer():
     #         return angular_velocity
 
             
-    def action_server_launcher(self, goal:SearchGoal):
+    def action_server_launcher(self, goal: SearchGoal):
         rate = rospy.Rate(10)
 
         # Print the received goal for debugging
@@ -80,6 +80,7 @@ class RobotExplorer():
         if not success:
             # abort the action server if an invalid goal has been requested...
             rospy.logerr("Aborting action due to invalid goal...")
+            self.result.total_distance_travelled = 0
             self.actionserver.set_aborted(SearchResult())
             return
         #if requested goal is valid
@@ -92,23 +93,23 @@ class RobotExplorer():
             posy0 = self.pose.posy
 
             # Check LiDAR data
-            closest_object_distance = min(self.lidar.subsets.frontArray)
+            self.closest_object = min(self.lidar.subsets.frontArray)
 
             # self.closest_object_location = self.tb3_lidar.closest_object_position #angle
 
             #check if there is object detected
-            if closest_object_distance <= self.min_safe_distance:
+            if self.closest_object <= self.min_safe_distance:
                 rospy.loginfo("Obstacle detected. Avoiding obstacle")
 
                 # Calculate angular velocity to avoid the obstacle
-                min_distance_index = self.lidar.subsets.frontArray.index(closest_object_distance)
-                angle_increment = 0.5
-                closest_object_location = (min_distance_index - len(self.lidar.subsets.frontArray) / 2) * angle_increment
-                angular_velocity = self.calculate_angular_velocity(closest_object_location)
+                # min_distance_index = self.lidar.subsets.frontArray.index(self.closest_object)
+                # angle_increment = 0.5
+                # closest_object_location = (min_distance_index - len(self.lidar.subsets.frontArray) / 2) * angle_increment
+                angular_velocity = self.calculate_angular_velocity(self.closest_object)
                 self.motion.set_velocity(linear=0.0, angular=angular_velocity)
                 self.motion.publish_velocity()
 
-                rospy.sleep(0.5)  # Allow the robot to turn for 1 second
+                rospy.sleep(1)  # Allow the robot to turn for 1 second
 
             else:
                 # No obstacle detected, continue exploration

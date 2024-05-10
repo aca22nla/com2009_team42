@@ -29,12 +29,13 @@ class RobotExplorer():
                                                           self.action_server_launcher, auto_start=False)
         self.actionserver.start()
 
-        self.min_safe_distance = 0.4
+        self.min_front_distance = 0.4
+        self.min_side_distance = 0.2
         self.max_angular_velocity = math.radians(35)  # Maximum angular velocity in radians per second
-        self.turn_threshold = math.radians(10)  # Angle threshold for initiating a turn
 
         rospy.loginfo("The 'Search Action Server' is active...")
 
+    
     def calculate_angular_velocity(self, closest_object_location):
         orientation_difference = closest_object_location - self.pose.yaw
         # Normalize the orientation difference to the range [-pi, pi]
@@ -43,19 +44,6 @@ class RobotExplorer():
         # Calculate angular velocity based on the orientation difference
         return orientation_difference  # Adjust the coefficient as needed
 
-
-    # def calculate_angular_velocity(self):
-    #     # Calculate angular velocity based on laser scan data
-    #     if self.closest_object > self.min_safe_distance:
-    #         # No obstacles nearby, move forward
-    #         return 0.0
-    #     elif abs(self.closest_object_location) < self.turn_threshold:
-    #         # Obstacle detected near the front, initiate a turn
-    #         return self.max_angular_velocity
-    #     else:
-    #         # Obstacle detected, calculate angular velocity to follow the gap
-    #         angular_velocity = (self.closest_object_location - 0) / 20.0  # proportional control
-    #         return angular_velocity
 
             
     def action_server_launcher(self, goal: SearchGoal):
@@ -94,11 +82,13 @@ class RobotExplorer():
 
             # Check LiDAR data
             self.closest_object = min(self.lidar.subsets.frontArray)
+            self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
+            self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
 
             # self.closest_object_location = self.tb3_lidar.closest_object_position #angle
 
             #check if there is object detected
-            if self.closest_object <= self.min_safe_distance:
+            if self.closest_object <= self.min_front_distance:
                 rospy.loginfo("Obstacle detected. Avoiding obstacle")
 
                 # Calculate angular velocity to avoid the obstacle
@@ -110,6 +100,18 @@ class RobotExplorer():
                 self.motion.publish_velocity()
 
                 rospy.sleep(1)  # Allow the robot to turn for 1 second
+
+            if self.left_obstacle <= self.min_side_distance :
+                rospy.loginfo("Obstacle detected. Avoiding obstacle")
+
+
+                angular_velocity = self.calculate_angular_velocity(self.left_obstacle)
+                self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+                self.motion.publish_velocity()
+
+                rospy.sleep(1)  # Allow the robot to turn for 1 second
+
+
 
             else:
                 # No obstacle detected, continue exploration

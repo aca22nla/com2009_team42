@@ -14,6 +14,7 @@ class MazeActionServer():
     result = SearchResult()
 
     def __init__(self):
+        self.consecutive_obstacles = 0
         self.server_name = "search_action_server"
         rospy.init_node(self.server_name)
 
@@ -27,9 +28,10 @@ class MazeActionServer():
                                                           self.action_server_launcher, auto_start=False)
         self.actionserver.start()
 
-        self.min_safe_distance = 0.35
+        self.min_safe_distance = 0.3
         self.max_angular_velocity = radians(35)  # Maximum angular velocity in radians per second
         self.turn_threshold = radians(10)  # Angle threshold for initiating a turn
+        self.dynamic_threshold_scale = 0.5
 
         rospy.loginfo("The 'Search Action Server' is active...")
 
@@ -119,11 +121,26 @@ class MazeActionServer():
 
         # Calculate angular velocity to avoid the obstacle
         angular_velocity = self.calculate_angular_velocity()
-        self.vel_controller.set_move_cmd(0.0, angular_velocity)
-        self.vel_controller.publish()
 
-        rospy.sleep(1)  # Turn for 1 second
+        if self.consecutive_obstacles == 0:
+            # First obstacle encountered, turn 90 degrees
+            self.vel_controller.set_move_cmd(0.0, angular_velocity)
+            self.vel_controller.publish()
+            rospy.sleep(1)  # Turn for 1 second
+            self.consecutive_obstacles += 1
+        elif self.consecutive_obstacles == 1:
+            # Second consecutive obstacle encountered, turn 180 degrees
+            self.vel_controller.set_move_cmd(0.0, -angular_velocity)  # Negative angular velocity for opposite direction
+            self.vel_controller.publish()
+            rospy.sleep(2)  # Turn for 2 seconds (assuming the robot turns at the same rate)
+            self.consecutive_obstacles = 0  # Reset consecutive obstacles
+        else:
+            # Reset consecutive obstacles count if no consecutive obstacles
+            self.consecutive_obstacles = 0
 
+        # Stop the robot after turning
+        self.vel_controller.stop()
+        
     def main(self):
         rospy.spin()
 

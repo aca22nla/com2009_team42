@@ -8,7 +8,7 @@ import math
 
 
 from tuos_msgs.msg import SearchAction, SearchFeedback, SearchResult, SearchGoal
-
+from testcolour_search import TestColourSearch
 
 
 class RobotExplorer():
@@ -19,14 +19,18 @@ class RobotExplorer():
         self.server_name = "search_action_server"
         rospy.init_node(self.server_name)
 
+        self.colour_search = TestColourSearch()
+        
         # functions from the waffle.py module:
         self.motion = waffle.Motion(debug = True)
         self.pose = waffle.Pose(debug = True)
         self.lidar = waffle.Lidar(debug = True)
         rospy.loginfo("Lidar initialized successfully")
 
+        
+
         self.actionserver = actionlib.SimpleActionServer(self.server_name, SearchAction,
-                                                          self.action_server_launcher, auto_start=False)
+                                                          lambda goal, img_data=None: self.action_server_launcher(goal, img_data), auto_start=False)
         self.actionserver.start()
 
         self.min_front_distance = 0.4
@@ -35,7 +39,6 @@ class RobotExplorer():
 
         rospy.loginfo("The 'Search Action Server' is active...")
 
-    
     def calculate_angular_velocity(self, closest_object_location):
         orientation_difference = closest_object_location - self.pose.yaw
         # Normalize the orientation difference to the range [-pi, pi]
@@ -46,7 +49,8 @@ class RobotExplorer():
 
 
             
-    def action_server_launcher(self, goal: SearchGoal):
+    def action_server_launcher(self, goal: SearchGoal, img_data):
+       
         rate = rospy.Rate(10)
 
         # Print the received goal for debugging
@@ -128,9 +132,12 @@ class RobotExplorer():
                 # exit the loop:
                 break
 
-
+            posx1 = self.pose.posx
+            posy1 = self.pose.posy
             # determine how far the robot has travelled so far:
-            self.distance = math.sqrt(pow(posx0 - self.pose.posx, 2) + pow(posy0 - self.pose.posy, 2))
+            self.distance = math.sqrt(pow(posx1 - posx0, 2) + pow(posy1 - posy0, 2))
+
+            posx0, posy0 = posx1, posy1
 
             # update feedback message values and publish feedback:
             self.feedback.current_distance_travelled = self.distance
@@ -139,19 +146,35 @@ class RobotExplorer():
 
             # update all result parameters:
             self.result.total_distance_travelled = self.distance
+            self.colour_search.camera_callback(img_data) # To perform colour detection
             # self.result.closest_object_angle = self.closest_object_location
             # self.result.closest_object_distance = self.closest_object
 
             rate.sleep()
+
+        img_data = self.colour_search.get_latest_img_data()
+
+        if img_data is None:
+            img_data = self.colour_search.get_latest_img_data
+        else:
+            rospy.logerr("No image data available")
             
         if success:
             rospy.loginfo("approach completed successfully.")
             self.actionserver.set_succeeded(self.result)
             self.motion.stop()
+        
+        
+
+        # if img_data is not None:
+        #     # Process as needed
+        # else:
+        #     rospy.logerr("No image data available")
 
     def main(self):
         rospy.spin()
 
 if __name__ == '__main__':
+    # rospy.init_node("search_action_server")
     node = RobotExplorer()
     node.main()

@@ -197,8 +197,8 @@ class Lidar():
 
         ## Get LiDAR Subsets:
         # Front:
-        left = scan_data.ranges[0:20+1]
-        right = scan_data.ranges[-20:]
+        left = scan_data.ranges[0:40+1]
+        right = scan_data.ranges[-40:]
         left_right = np.array(left[::-1] + right[::-1])
         self.subsets.front, self.subsets.frontArray = self.filter(left_right)
         

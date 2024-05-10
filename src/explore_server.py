@@ -30,7 +30,7 @@ class RobotExplorer():
         self.actionserver.start()
 
         self.min_front_distance = 0.4
-        self.min_side_distance = 0.2
+        self.min_side_distance = 0.25
         self.max_angular_velocity = math.radians(35)  # Maximum angular velocity in radians per second
 
         rospy.loginfo("The 'Search Action Server' is active...")
@@ -92,24 +92,24 @@ class RobotExplorer():
                 rospy.loginfo("Obstacle detected. Avoiding obstacle")
 
                 # Calculate angular velocity to avoid the obstacle
-                # min_distance_index = self.lidar.subsets.frontArray.index(self.closest_object)
-                # angle_increment = 0.5
-                # closest_object_location = (min_distance_index - len(self.lidar.subsets.frontArray) / 2) * angle_increment
+                min_distance_index = self.lidar.subsets.frontArray.index(self.closest_object)
+                angle_increment = 0.5
+                closest_object_location = (min_distance_index - len(self.lidar.subsets.frontArray) / 2) * angle_increment
                 angular_velocity = self.calculate_angular_velocity(self.closest_object)
                 self.motion.set_velocity(linear=0.0, angular=angular_velocity)
                 self.motion.publish_velocity()
 
                 rospy.sleep(1)  # Allow the robot to turn for 1 second
 
-            if self.left_obstacle <= self.min_side_distance :
-                rospy.loginfo("Obstacle detected. Avoiding obstacle")
+            # if self.left_obstacle <= self.min_side_distance :
+            #     rospy.loginfo("Obstacle detected. Avoiding obstacle")
 
 
-                angular_velocity = self.calculate_angular_velocity(self.left_obstacle)
-                self.motion.set_velocity(linear=0.0, angular=angular_velocity)
-                self.motion.publish_velocity()
+            #     angular_velocity = self.calculate_angular_velocity(self.left_obstacle)
+            #     self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+            #     self.motion.publish_velocity()
 
-                rospy.sleep(1)  # Allow the robot to turn for 1 second
+            #     rospy.sleep(1)  # Allow the robot to turn for 1 second
 
 
 

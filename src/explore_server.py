@@ -2,22 +2,18 @@
 # search_server.py
 
 import rospy
-import actionlib
 import waffle
 import math
-
-
-from tuos_msgs.msg import SearchAction, SearchFeedback, SearchResult, SearchGoal
+import roslaunch
 from testcolour_search import TestColourSearch
 
-
 class RobotExplorer():
-    feedback = SearchFeedback() 
-    result = SearchResult()
-
+    
     def __init__(self):
-        self.server_name = "search_action_server"
-        rospy.init_node(self.server_name)
+        self.node = "explore_server"
+        rospy.init_node(self.node)
+
+        self.rate = rospy.Rate(10)
 
         self.colour_search = TestColourSearch()
         
@@ -27,59 +23,54 @@ class RobotExplorer():
         self.lidar = waffle.Lidar(debug = True)
         rospy.loginfo("Lidar initialized successfully")
 
-        
-
-        self.actionserver = actionlib.SimpleActionServer(self.server_name, SearchAction,
-                                                          lambda goal, img_data=None: self.action_server_launcher(goal, img_data), auto_start=False)
-        self.actionserver.start()
 
         self.min_front_distance = 0.4
         self.min_side_distance = 0.25
         self.max_angular_velocity = math.radians(35)  # Maximum angular velocity in radians per second
 
-        rospy.loginfo("The 'Search Action Server' is active...")
+        rospy.loginfo("The 'Explore Server' is active...")
 
     def calculate_angular_velocity(self, closest_object_location):
         orientation_difference = closest_object_location - self.pose.yaw
         # Normalize the orientation difference to the range [-pi, pi]
         orientation_difference = (orientation_difference + math.pi) % (2 * math.pi) - math.pi
         
+        # Define the maximum allowed angular velocities
+        pmax_angular_velocity = 1.6  # Maximum angular velocity in radians per second
+        nmax_angular_velocity = -1.6  # Minimum angular velocity in radians per second
+        
         # Calculate angular velocity based on the orientation difference
-        return orientation_difference  # Adjust the coefficient as needed
+        angular_velocity = orientation_difference
+        
+        # Limit angular velocity to the maximum allowed value
+        if angular_velocity > pmax_angular_velocity:
+            angular_velocity = pmax_angular_velocity
+        elif angular_velocity < nmax_angular_velocity:
+            angular_velocity = nmax_angular_velocity
+
+        return angular_velocity 
 
 
-            
-    def action_server_launcher(self, goal: SearchGoal, img_data):
-       
-        rate = rospy.Rate(10)
+    # def save_map_periodically(self):
 
-        # Print the received goal for debugging
-        rospy.loginfo(f"Received goal: fwd_velocity={goal.fwd_velocity}, approach_distance={goal.approach_distance}")
+    #     print(f"Saving file at time: {rospy.get_time()}...")
 
-        # Goal input parameter(s)
-        success = True
-        if goal.fwd_velocity > 0.26:
-            rospy.logerr("Too fast! The robot's max velocity is 0.26 m/s.")
-            print("Too fast! The robot's max velocity is 0.26 m/s.")
-            success = False
+    #     node = roslaunch.core.Node(
+    #         package="map_server",
+    #         node_type="map_saver",
+    #         output="screen",
+    #         args=f"-f $(find com2009_team42)/maps/task4_map",
+    #     )
+    #     launch = roslaunch.scriptapi.ROSLaunch()
+    #     launch.start()
+    #     process = launch.launch(node)
 
-        if goal.approach_distance < 0.25:
-            print("Too near! The robot may hit an obstacle.")
-            rospy.logerr("Too near! The robot may hit an obstacle.")
-            success = False
+    def main(self, img_data):
 
-
-        if not success:
-            # abort the action server if an invalid goal has been requested...
-            rospy.logerr("Aborting action due to invalid goal...")
-            self.result.total_distance_travelled = 0
-            self.actionserver.set_aborted(SearchResult())
-            return
-        #if requested goal is valid
-        print(f"Valid goal. Continue action...")
-
+        img_data = self.colour_search.get_latest_img_data()
 
         while not rospy.is_shutdown():
+
             # Get the robot's current odometry
             posx0 = self.pose.posx
             posy0 = self.pose.posy
@@ -89,16 +80,11 @@ class RobotExplorer():
             self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
             self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
 
-            # self.closest_object_location = self.tb3_lidar.closest_object_position #angle
-
             #check if there is object detected
             if self.closest_object <= self.min_front_distance:
                 rospy.loginfo("Obstacle detected. Avoiding obstacle")
 
                 # Calculate angular velocity to avoid the obstacle
-                min_distance_index = self.lidar.subsets.frontArray.index(self.closest_object)
-                angle_increment = 0.5
-                closest_object_location = (min_distance_index - len(self.lidar.subsets.frontArray) / 2) * angle_increment
                 angular_velocity = self.calculate_angular_velocity(self.closest_object)
                 self.motion.set_velocity(linear=0.0, angular=angular_velocity)
                 self.motion.publish_velocity()
@@ -122,15 +108,7 @@ class RobotExplorer():
                 self.motion.set_velocity(linear=0.2, angular=0.0)
                 self.motion.publish_velocity()
 
-            # check if there has been a request to cancel the action mid-way through:
-            if self.actionserver.is_preempt_requested():
-                rospy.loginfo("Action preempted. Cancelling goal...")
-                self.actionserver.set_preempted(self.result)
-                # Stop the robot
-                self.motion.stop()
-                success = False
-                # exit the loop:
-                break
+          
 
             posx1 = self.pose.posx
             posy1 = self.pose.posy
@@ -139,42 +117,31 @@ class RobotExplorer():
 
             posx0, posy0 = posx1, posy1
 
-            # update feedback message values and publish feedback:
-            self.feedback.current_distance_travelled = self.distance
-            rospy.loginfo(f"Travelled {self.feedback.current_distance_travelled:.2f} m")
-            self.actionserver.publish_feedback(self.feedback)
 
-            # update all result parameters:
-            self.result.total_distance_travelled = self.distance
             self.colour_search.camera_callback(img_data) # To perform colour detection
-            # self.result.closest_object_angle = self.closest_object_location
-            # self.result.closest_object_distance = self.closest_object
 
-            rate.sleep()
+            if img_data is None:
+                rospy.logerr("No image data available")   
+            else:
+                img_data
+                 
+           
 
-        img_data = self.colour_search.get_latest_img_data()
+            self.rate.sleep()
 
-        if img_data is None:
-            img_data = self.colour_search.get_latest_img_data
-        else:
-            rospy.logerr("No image data available")
             
-        if success:
-            rospy.loginfo("approach completed successfully.")
-            self.actionserver.set_succeeded(self.result)
-            self.motion.stop()
-        
-        
 
-        # if img_data is not None:
-        #     # Process as needed
-        # else:
-        #     rospy.logerr("No image data available")
+        # # Create a timer to call save_map_periodically function every 5 seconds
+        # rospy.Timer(rospy.Duration(5), self.save_map_periodically)
 
-    def main(self):
-        rospy.spin()
+        # rospy.spin()
+
+    
+
 
 if __name__ == '__main__':
     # rospy.init_node("search_action_server")
     node = RobotExplorer()
-    node.main()
+    img_data = node.colour_search.get_latest_img_data()
+    node.main(img_data)
+    rospy.spin()

@@ -152,6 +152,7 @@ class Lidar():
         while self.wait_for_lidar:
             continue
         if self.dbg: rospy.loginfo('LiDAR Data is available...')
+
     
     class scanSubsets():
         def __init__(self):
@@ -215,3 +216,6 @@ class Lidar():
         self.subsets.l4, self.subsets.l4Array = self.get_subset(95, 110)
         
         self.wait_for_lidar = False
+
+    
+

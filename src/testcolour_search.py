@@ -75,7 +75,7 @@ class TestColourSearch():
             cv_img = self.cvbridge_interface.imgmsg_to_cv2(img_data, desired_encoding="bgr8")
             image_path = self.snaps_folder.joinpath("task4_beacon.jpg")
             cv2.imwrite(str(image_path), cv_img)
-            rospy.loginfo("Beacon image saved successfully at {image_path}.")
+            rospy.loginfo(f"Beacon image saved successfully at {image_path}.")
         except CvBridgeError as e:
             rospy.logerr(e)
     
@@ -131,7 +131,7 @@ class TestColourSearch():
             if not self.beacon_detected and abs(self.cy - crop_width / 2) < 50:
                 self.save_image(img_data)
                 self.beacon_detected = True
-                rospy.loginfo("Beacon detected and image captured.")
+                rospy.loginfo(f"Beacon detected and image captured.")
                 self.stop_counter = 20
 
         if self.beacon_detected and self.stop_counter > 0:
@@ -146,10 +146,7 @@ class TestColourSearch():
         self.latest_img_data = img_data
 
     def get_latest_img_data(self):
-        if self.latest_img_data is None:
-            return ""
-        else:
-            return self.latest_img_data
+        return self.latest_img_data
 
     def main(self):
         while not self.ctrl_c:

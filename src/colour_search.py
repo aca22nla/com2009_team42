@@ -19,22 +19,20 @@ from tb3 import Tb3Move
 
 from std_msgs.msg import Float32
 
-class TestColourSearch():
+class ColourSearch():
 
-    def __init__(self, target_colour):
+    def __init__(self):
         # node_name = "turn_and_face"
         # rospy.init_node(node_name)
 
         # rospy.init_node("colour_search")
 
-        self.target_colour = target_colour
-        self.target_hsv_lower, self.target_hsv_upper = self.get_hsv_threshold(target_colour)
-        
-        if self.target_colour not in ["yellow", "red", "green", "blue"]:
-            rospy.logerr("Invalid target colour specified! Must be one of: yellow, red, green, blue.")
-            rospy.signal_shutdown("Invalid target colour specified")
+        # self.target_colour = rospy.get_param("~target_colour", "")
+        # if self.target_colour not in ["yellow", "red", "green", "blue"]:
+        #     rospy.logerr("Invalid target colour specified! Must be one of: yellow, red, green, blue.")
+        #     rospy.signal_shutdown("Invalid target colour specified")
 
-        rospy.loginfo(f"TASK 4 BEACON: The target is {self.target_colour}.")
+        # rospy.loginfo(f"TASK 4 BEACON: The target is {self.target_colour}.")
 
         self.camera_subscriber = rospy.Subscriber(
             "/camera/rgb/image_raw",
@@ -67,23 +65,6 @@ class TestColourSearch():
         self.latest_img_data = None
         self.beacon_detected = False
 
-    def get_hsv_threshold(self, target_colour):
-        if target_colour == "blue":
-            return ((115, 224, 100), (130, 255, 255))
-            # return ((102.027, 221.155, 100), (105.186, 255, 255))
-        elif target_colour == "green":
-            return ((50, 150, 100), (65, 255, 255))
-            # return ((82.7, 196, 100), (89.5, 254, 255))
-        elif target_colour == "red":
-            return ((0, 185, 100), (10, 255, 255))
-            # return ((2.032, 197.604, 100), (4.029, 252.456, 255))
-        elif target_colour == "yellow":
-            return ((50, 150, 100), (65, 255, 255))
-            # return ((24.8727, 201.634, 100), (26.031, 250.234, 255))
-        else:
-            rospy.logerr(f"Invalid target colour: {target_colour}")
-            return None, None
-        
     def shutdown_ops(self):
         self.robot_controller.stop()
         cv2.destroyAllWindows()
@@ -94,12 +75,13 @@ class TestColourSearch():
             cv_img = self.cvbridge_interface.imgmsg_to_cv2(img_data, desired_encoding="bgr8")
             image_path = self.snaps_folder.joinpath("task4_beacon.jpg")
             cv2.imwrite(str(image_path), cv_img)
-            rospy.loginfo(f"Beacon image saved successfully at {image_path}.")
+            rospy.loginfo("Beacon image saved successfully at {image_path}.")
         except CvBridgeError as e:
             rospy.logerr(e)
     
     def camera_callback(self, img_data):
         if img_data is None:
+            # rospy.logerr("Received NoneType img_data in camera_callback")
             return 
         
         try:
@@ -117,7 +99,28 @@ class TestColourSearch():
 
         crop_img = cv_img[crop_y:crop_y+crop_height, crop_x:crop_x+crop_width]
         hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv_img, self.target_hsv_lower, self.target_hsv_upper)
+
+        # Define HSV thresholds for each beacon color
+        # beacon_thresholds = {
+        #     "BLUE": ((102.027, 221.155, 100), (105.186, 255, 255)),
+        #     "GREEN": ((82.7, 196, 100), (89.5, 254, 255)),
+        #     "RED": ((2.032, 197.604, 100), (4.029, 252.456, 255)),
+        #     "YELLOW":((24.8727, 201.634, 100), (26.031, 250.234, 255))
+        # } # Values for real waffle robot
+
+        beacon_thresholds = {
+            "BLUE": ((115, 224, 100), (130, 255, 255)),
+            "GREEN": ((50, 150, 100), (65, 255, 255)),
+            "RED": ((0, 185, 100), (10, 255, 255)),
+            "YELLOW": ((50, 150, 100), (65, 255, 255))
+        } # Values for simulation waffle robot
+       
+        mask = np.zeros((crop_height, crop_width), dtype=np.uint8)
+
+        # Apply thresholds for each beacon color
+        for color, (lower, upper) in beacon_thresholds.items():
+            color_mask = cv2.inRange(hsv_img, lower, upper)
+            mask = cv2.bitwise_or(mask, color_mask)
 
         if np.any(mask > 0):
             res = cv2.bitwise_and(crop_img, crop_img, mask = mask)
@@ -133,7 +136,7 @@ class TestColourSearch():
             if not self.beacon_detected and abs(self.cy - crop_width / 2) < 50:
                 self.save_image(img_data)
                 self.beacon_detected = True
-                rospy.loginfo(f"Beacon detected and image captured.")
+                rospy.loginfo("Beacon detected and image captured.")
                 self.stop_counter = 20
 
         if self.beacon_detected and self.stop_counter > 0:
@@ -148,7 +151,10 @@ class TestColourSearch():
         self.latest_img_data = img_data
 
     def get_latest_img_data(self):
-        return self.latest_img_data
+        if self.latest_img_data is None:
+            return ""
+        else:
+            return self.latest_img_data
 
     def main(self):
         while not self.ctrl_c:
@@ -184,7 +190,7 @@ class TestColourSearch():
             self.rate.sleep()
             
 if __name__ == '__main__':
-    node = TestColourSearch()
+    node = ColourSearch()
     try:
         node.main()
     except rospy.ROSInterruptException:

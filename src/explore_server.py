@@ -14,8 +14,8 @@ class RobotExplorer():
         rospy.init_node(self.node)
 
         self.rate = rospy.Rate(10)
-
-        self.colour_search = TestColourSearch()
+        self.target_colour = rospy.get_param("~target_colour", "")
+        self.colour_search = TestColourSearch(self.target_colour)
         
         # functions from the waffle.py module:
         self.motion = waffle.Motion(debug = True)

@@ -80,6 +80,7 @@ class RobotExplorer():
             self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
             self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
 
+
             #check if there is object detected
             if self.closest_object <= self.min_front_distance:
                 rospy.loginfo("Obstacle detected. Avoiding obstacle")

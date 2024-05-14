@@ -110,12 +110,12 @@ class TestColourSearch():
             print(e)
         
         height, width, _ = cv_img.shape
-        crop_width = width - 800
-        crop_height = 400
-        crop_x = int((width/2) - (crop_width/2))
-        crop_y = int((height/2) - (crop_height/2))
+        crop_height = height - 400
+        crop_width = 600
+        crop_y = int((width/2) - (crop_width/2))
+        crop_x = int((height/2) - (crop_height/2))
 
-        crop_img = cv_img[crop_y:crop_y+crop_height, crop_x:crop_x+crop_width]
+        crop_img = cv_img[crop_x:crop_x+crop_width, crop_y:crop_y+crop_height]
         hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv_img, self.target_hsv_lower, self.target_hsv_upper)
 

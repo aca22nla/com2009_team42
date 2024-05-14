@@ -32,7 +32,7 @@ def main():
         process = launch.launch(map_saver_node)
 
         # Sleep to maintain the loop frequency
-        rate.sleep()
+        rospy.sleep(5)
 
 if __name__ == "__main__":
     try:

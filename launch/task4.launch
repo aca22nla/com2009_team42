@@ -32,7 +32,6 @@ https://github.com/ROBOTIS-GIT/turtlebot3/blob/master/turtlebot3_navigation/laun
 
   <!-- action nodes -->
   <node pkg="com2009_team42" type="explore_server.py" name="explore_server" output="screen">
-    <param name="target_colour" value="$(arg target_colour)"/>
   </node>
 
    <!-- reference: https://wiki.ros.org/gmapping -->

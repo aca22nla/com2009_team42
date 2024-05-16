@@ -37,7 +37,7 @@ class TestColourSearch():
         rospy.loginfo(f"TASK 4 BEACON: The target is {self.target_colour}.")
 
         self.camera_subscriber = rospy.Subscriber(
-            "/camera/color/image_raw",
+            "/camera/rgb/image_raw",
             Image, self.camera_callback
         )
         self.cvbridge_interface = CvBridge()
@@ -69,17 +69,17 @@ class TestColourSearch():
 
     def get_hsv_threshold(self, target_colour):
         if target_colour == "blue":
-            # return ((115, 224, 100), (130, 255, 255))
-            return ((102.027, 221.155, 100), (105.186, 255, 255))
+            return ((115, 224, 100), (130, 255, 255))
+            # return ((102.027, 221.155, 100), (105.186, 255, 255))
         elif target_colour == "green":
-            # return ((50, 150, 100), (65, 255, 255))
-            return ((82.7, 196, 100), (89.5, 254, 255))
+            return ((50, 150, 100), (65, 255, 255))
+            # return ((82.7, 196, 100), (89.5, 254, 255))
         elif target_colour == "red":
-            # return ((0, 185, 100), (10, 255, 255))
-            return ((2.032, 197.604, 100), (4.029, 252.456, 255))
+            return ((0, 185, 100), (10, 255, 255))
+            # return ((2.032, 197.604, 100), (4.029, 252.456, 255))
         elif target_colour == "yellow":
-            # return ((50, 150, 100), (65, 255, 255))
-            return ((24.8727, 201.634, 100), (26.031, 250.234, 255))
+            return ((50, 150, 100), (65, 255, 255))
+            # return ((24.8727, 201.634, 100), (26.031, 250.234, 255))
         else:
             rospy.logerr(f"Invalid target colour: {target_colour}")
             return None, None
@@ -100,50 +100,54 @@ class TestColourSearch():
     
     def camera_callback(self, img_data):
         if img_data is None:
-            return 
+            return
         
-        try:
-            cv_img = self.cvbridge_interface.imgmsg_to_cv2(
-                img_data, desired_encoding="bgr8"
-            )
-        except CvBridgeError as e:
-            print(e)
-        
-        height, width, _ = cv_img.shape
-        crop_height = height - 400
-        crop_width = 600
-        crop_y = int((width/2) - (crop_width/2))
-        crop_x = int((height/2) - (crop_height/2))
+        # Check if the target_colour parameter is specified 
+        if self.target_colour and self.target_colour in ["yellow", "red", "green", "blue"]:
+            try:
+                cv_img = self.cvbridge_interface.imgmsg_to_cv2(
+                    img_data, desired_encoding="bgr8"
+                )
+            except CvBridgeError as e:
+                print(e)
+            
+            height, width, _ = cv_img.shape
+            crop_width = width - 400
+            crop_height = 600
+            crop_x = int((width/2) - (crop_width/2))
+            crop_y = int((height/2) - (crop_height/2))
 
-        crop_img = cv_img[crop_x:crop_x+crop_width, crop_y:crop_y+crop_height]
-        hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv_img, self.target_hsv_lower, self.target_hsv_upper)
+            crop_img = cv_img[crop_y:crop_y+crop_height, crop_x:crop_x+crop_width]
+            hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv_img, self.target_hsv_lower, self.target_hsv_upper)
 
-        if np.any(mask > 0):
-            res = cv2.bitwise_and(crop_img, crop_img, mask = mask)
+            if np.any(mask > 0):
+                res = cv2.bitwise_and(crop_img, crop_img, mask = mask)
 
-        m = cv2.moments(mask)
-        self.m00 = m['m00']
-        self.cy = m['m10'] / (m['m00'] + 1e-5)
+            m = cv2.moments(mask)
+            self.m00 = m['m00']
+            self.cy = m['m10'] / (m['m00'] + 1e-5)
 
-        if self.m00 > self.m00_min:
-            cv2.circle(crop_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
-            self.centroid_publisher.publish(self.cy) # Publish the centroid of the detected beacon
+            if self.m00 > self.m00_min:
+                cv2.circle(crop_img, (int(self.cy), 200), 10, (0, 0, 255), 2)
+                self.centroid_publisher.publish(self.cy) # Publish the centroid of the detected beacon
 
-            if not self.beacon_detected and abs(self.cy - crop_width / 2) < 50:
-                self.save_image(img_data)
-                self.beacon_detected = True
-                rospy.loginfo(f"Beacon detected and image captured.")
-                self.stop_counter = 20
+                if abs(self.cy - crop_width / 2) < 50 and not self.beacon_detected:
+                    # Check if target_colour is specified before saving the image
+                    if self.target_colour:
+                        self.save_image(img_data)
+                    self.beacon_detected = True
+                    rospy.loginfo(f"Beacon detected and image captured.")
+                    self.stop_counter = 20
 
-        if self.beacon_detected and self.stop_counter > 0:
-            self.stop_counter -= 1
-        else:
-            self.beacon_detected = False
+            if self.beacon_detected and self.stop_counter > 0:
+                self.stop_counter -= 1
+            else:
+                self.beacon_detected = False
 
-        if self.beacon_detected:
-            cv2.imshow('task4_beacon.jpg', crop_img)
-            cv2.waitKey(1)
+            if self.beacon_detected:
+                cv2.imshow('task4_beacon.jpg', crop_img)
+                cv2.waitKey(1)
 
         self.latest_img_data = img_data
 

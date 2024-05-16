@@ -15,7 +15,9 @@ class RobotExplorer():
 
         self.rate = rospy.Rate(10)
         self.target_colour = rospy.get_param("~target_colour", "")
-        self.colour_search = TestColourSearch(self.target_colour)
+        self.colour_search = None
+        if self.target_colour in ["yellow", "red", "green", "blue"]:
+            self.colour_search = TestColourSearch(self.target_colour)
         
         # functions from the waffle.py module:
         self.motion = waffle.Motion(debug = True)
@@ -65,9 +67,7 @@ class RobotExplorer():
     #     launch.start()
     #     process = launch.launch(node)
 
-    def main(self, img_data):
-
-        img_data = self.colour_search.get_latest_img_data()
+    def main(self):
 
         while not rospy.is_shutdown():
 
@@ -80,36 +80,42 @@ class RobotExplorer():
             self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
             self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
 
+            if self.target_colour and self.colour_search:
 
             #check if there is object detected
-            if self.closest_object <= self.min_front_distance:
-                rospy.loginfo("Obstacle detected. Avoiding obstacle")
+                if self.closest_object <= self.min_front_distance:
+                    rospy.loginfo("Obstacle detected. Avoiding obstacle")
 
-                # Calculate angular velocity to avoid the obstacle
-                angular_velocity = self.calculate_angular_velocity(self.closest_object)
-                self.motion.set_velocity(linear=0.0, angular=angular_velocity)
-                self.motion.publish_velocity()
+                    # Calculate angular velocity to avoid the obstacle
+                    angular_velocity = self.calculate_angular_velocity(self.closest_object)
+                    self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+                    self.motion.publish_velocity()
 
-                rospy.sleep(1)  # Allow the robot to turn for 1 second
+                    rospy.sleep(1)  # Allow the robot to turn for 1 second
 
-            # if self.left_obstacle <= self.min_side_distance :
-            #     rospy.loginfo("Obstacle detected. Avoiding obstacle")
+                else:
+                    # No obstacle detected, continue exploration
+                    self.motion.set_velocity(linear=0.2, angular=0.0)
+                    self.motion.publish_velocity()
 
-
-            #     angular_velocity = self.calculate_angular_velocity(self.left_obstacle)
-            #     self.motion.set_velocity(linear=0.0, angular=angular_velocity)
-            #     self.motion.publish_velocity()
-
-            #     rospy.sleep(1)  # Allow the robot to turn for 1 second
-
-
+                img_data = self.colour_search.get_latest_img_data()
+                self.colour_search.camera_callback(img_data) # To perform colour detection
 
             else:
-                # No obstacle detected, continue exploration
-                self.motion.set_velocity(linear=0.2, angular=0.0)
-                self.motion.publish_velocity()
 
-          
+                if self.closest_object <= self.min_front_distance:
+                    rospy.loginfo("Obstacle detected. Avoiding obstacle")
+
+                    # Calculate angular velocity to avoid the obstacle
+                    angular_velocity = self.calculate_angular_velocity(self.closest_object)
+                    self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+                    self.motion.publish_velocity()
+
+                    rospy.sleep(1)  # Allow the robot to turn for 1 second
+                else:
+                    # No obstacle detected, continue exploration
+                    self.motion.set_velocity(linear=0.2, angular=0.0)
+                    self.motion.publish_velocity()
 
             posx1 = self.pose.posx
             posy1 = self.pose.posy
@@ -118,31 +124,16 @@ class RobotExplorer():
 
             posx0, posy0 = posx1, posy1
 
-
-            self.colour_search.camera_callback(img_data) # To perform colour detection
-
-            if img_data is None:
-                rospy.logerr("No image data available")   
-            else:
-                img_data
+            # if img_data is None:
+            #     rospy.logerr("No image data available")   
+            # else:
+            #     img_data
                  
-           
-
             self.rate.sleep()
-
-            
-
-        # # Create a timer to call save_map_periodically function every 5 seconds
-        # rospy.Timer(rospy.Duration(5), self.save_map_periodically)
-
-        # rospy.spin()
-
-    
 
 
 if __name__ == '__main__':
     # rospy.init_node("search_action_server")
     node = RobotExplorer()
-    img_data = node.colour_search.get_latest_img_data()
-    node.main(img_data)
+    node.main()
     rospy.spin()

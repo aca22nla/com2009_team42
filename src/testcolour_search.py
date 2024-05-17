@@ -25,7 +25,7 @@ class TestColourSearch():
         # node_name = "turn_and_face"
         # rospy.init_node(node_name)
 
-        # rospy.init_node("colour_search")
+        # rospy.init_node('colour_search', anonymous=True) 
 
         self.target_colour = target_colour
         self.target_hsv_lower, self.target_hsv_upper = self.get_hsv_threshold(target_colour)
@@ -108,6 +108,7 @@ class TestColourSearch():
                 cv_img = self.cvbridge_interface.imgmsg_to_cv2(
                     img_data, desired_encoding="bgr8"
                 )
+                rospy.loginfo("Processing image data...")
             except CvBridgeError as e:
                 print(e)
             
@@ -153,6 +154,9 @@ class TestColourSearch():
 
     def get_latest_img_data(self):
         return self.latest_img_data
+    
+    def is_beacon_detected(self):
+        return self.beacon_detected
 
     def main(self):
         while not self.ctrl_c:

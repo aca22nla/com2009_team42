@@ -4,7 +4,6 @@
 import rospy
 import waffle
 import math
-import roslaunch
 from testcolour_search import TestColourSearch
 
 class RobotExplorer():
@@ -28,8 +27,8 @@ class RobotExplorer():
 
         self.min_front_distance = 0.4
         self.min_side_distance = 0.25
-        self.max_angular_velocity = math.radians(35)  # Maximum angular velocity in radians per second
 
+        self.state = "exploring"  # Initialize the state
         rospy.loginfo("The 'Explore Server' is active...")
 
     def calculate_angular_velocity(self, closest_object_location):
@@ -51,89 +50,153 @@ class RobotExplorer():
             angular_velocity = nmax_angular_velocity
 
         return angular_velocity 
+    def explore(self):
+        self.motion.set_velocity(linear=0.2, angular=0.0)
+        self.motion.publish_velocity()
 
+    def avoid_obstacle(self):
+        angular_velocity = self.calculate_angular_velocity(self.closest_object)
+        self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+        self.motion.publish_velocity()
 
-    # def save_map_periodically(self):
+    def check_obstacles(self):
+        self.closest_object = min(self.lidar.subsets.frontArray)
+        self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
+        self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
 
-    #     print(f"Saving file at time: {rospy.get_time()}...")
-
-    #     node = roslaunch.core.Node(
-    #         package="map_server",
-    #         node_type="map_saver",
-    #         output="screen",
-    #         args=f"-f $(find com2009_team42)/maps/task4_map",
-    #     )
-    #     launch = roslaunch.scriptapi.ROSLaunch()
-    #     launch.start()
-    #     process = launch.launch(node)
-
-    def main(self):
+    def detect_beacon(self):
+        return self.colour_search.is_beacon_detected()
+    
+    
+    def main(self, img_data):
 
         while not rospy.is_shutdown():
-
-            # Get the robot's current odometry
-            posx0 = self.pose.posx
-            posy0 = self.pose.posy
-
-            # Check LiDAR data
-            self.closest_object = min(self.lidar.subsets.frontArray)
-            self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
-            self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
+            self.check_obstacles()
 
             if self.target_colour and self.colour_search:
 
-            #check if there is object detected
                 if self.closest_object <= self.min_front_distance:
                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
-
-                    # Calculate angular velocity to avoid the obstacle
-                    angular_velocity = self.calculate_angular_velocity(self.closest_object)
-                    self.motion.set_velocity(linear=0.0, angular=angular_velocity)
-                    self.motion.publish_velocity()
-
-                    rospy.sleep(1)  # Allow the robot to turn for 1 second
-
+                    self.state = "avoiding_obstacle"
+                    
+                elif self.detect_beacon():
+                    rospy.loginfo("Beacon detected. Approaching beacon")
+                    self.state = "approaching_beacon"
                 else:
-                    # No obstacle detected, continue exploration
-                    self.motion.set_velocity(linear=0.2, angular=0.0)
-                    self.motion.publish_velocity()
+                    self.state = "exploring"
 
-                img_data = self.colour_search.get_latest_img_data()
-                self.colour_search.camera_callback(img_data) # To perform colour detection
+                if self.state == "avoiding_obstacle":
+                    self.avoid_obstacle()
+                    rospy.sleep(1)  # Allow the robot to turn for 1 second
+                    self.state = "exploring"
+                elif self.state == "approaching_beacon":
+                    self.approach_beacon()
+                elif self.state == "exploring":
+                    self.explore()
 
-            else:
-
+            else: 
                 if self.closest_object <= self.min_front_distance:
                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
-
-                    # Calculate angular velocity to avoid the obstacle
-                    angular_velocity = self.calculate_angular_velocity(self.closest_object)
-                    self.motion.set_velocity(linear=0.0, angular=angular_velocity)
-                    self.motion.publish_velocity()
-
-                    rospy.sleep(1)  # Allow the robot to turn for 1 second
+                    self.state = "avoiding_obstacle"
+                    
                 else:
-                    # No obstacle detected, continue exploration
-                    self.motion.set_velocity(linear=0.2, angular=0.0)
-                    self.motion.publish_velocity()
+                    self.state = "exploring"
 
-            posx1 = self.pose.posx
-            posy1 = self.pose.posy
-            # determine how far the robot has travelled so far:
-            self.distance = math.sqrt(pow(posx1 - posx0, 2) + pow(posy1 - posy0, 2))
+                if self.state == "avoiding_obstacle":
+                    self.avoid_obstacle()
+                    rospy.sleep(1)  # Allow the robot to turn for 1 second
+                    self.state = "exploring"
+                
+                elif self.state == "exploring":
+                    self.explore()
 
-            posx0, posy0 = posx1, posy1
 
-            # if img_data is None:
-            #     rospy.logerr("No image data available")   
-            # else:
-            #     img_data
-                 
+
+            img_data = self.colour_search.get_latest_img_data()
+            if img_data is None:
+                rospy.logerr("No image data available")
+
             self.rate.sleep()
 
+    def approach_beacon(self):
+        self.motion.set_velocity(linear=0.2, angular=0.0)
+        self.motion.publish_velocity()
+
+
+    
 
 if __name__ == '__main__':
-    # rospy.init_node("search_action_server")
     node = RobotExplorer()
-    node.main()
+    img_data = node.colour_search.get_latest_img_data()
+    node.main(img_data)
     rospy.spin()
+
+#     def main(self):
+
+#         while not rospy.is_shutdown():
+
+#             # Get the robot's current odometry
+#             posx0 = self.pose.posx
+#             posy0 = self.pose.posy
+
+#             # Check LiDAR data
+#             self.closest_object = min(self.lidar.subsets.frontArray)
+#             self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
+#             self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
+
+#             if self.target_colour and self.colour_search:
+
+#             #check if there is object detected
+#                 if self.closest_object <= self.min_front_distance:
+#                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
+
+#                     # Calculate angular velocity to avoid the obstacle
+#                     angular_velocity = self.calculate_angular_velocity(self.closest_object)
+#                     self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+#                     self.motion.publish_velocity()
+
+#                     rospy.sleep(1)  # Allow the robot to turn for 1 second
+
+#                 else:
+#                     # No obstacle detected, continue exploration
+#                     self.motion.set_velocity(linear=0.2, angular=0.0)
+#                     self.motion.publish_velocity()
+
+#                 img_data = self.colour_search.get_latest_img_data()
+#                 self.colour_search.camera_callback(img_data) # To perform colour detection
+
+#             else:
+
+#                 if self.closest_object <= self.min_front_distance:
+#                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
+
+#                     # Calculate angular velocity to avoid the obstacle
+#                     angular_velocity = self.calculate_angular_velocity(self.closest_object)
+#                     self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+#                     self.motion.publish_velocity()
+
+#                     rospy.sleep(1)  # Allow the robot to turn for 1 second
+#                 else:
+#                     # No obstacle detected, continue exploration
+#                     self.motion.set_velocity(linear=0.2, angular=0.0)
+#                     self.motion.publish_velocity()
+
+#             posx1 = self.pose.posx
+#             posy1 = self.pose.posy
+#             # determine how far the robot has travelled so far:
+#             self.distance = math.sqrt(pow(posx1 - posx0, 2) + pow(posy1 - posy0, 2))
+
+#             posx0, posy0 = posx1, posy1
+
+#             # if img_data is None:
+#             #     rospy.logerr("No image data available")   
+#             # else:
+#             #     img_data
+                 
+#             self.rate.sleep()
+
+
+# if __name__ == '__main__':
+#     node = RobotExplorer()
+#     node.main()
+#     rospy.spin()

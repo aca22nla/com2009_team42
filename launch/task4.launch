@@ -2,7 +2,7 @@
 https://github.com/ROBOTIS-GIT/turtlebot3/blob/master/turtlebot3_navigation/launch/turtlebot3_navigation.launch
 -->
 <launch>
-  <include file="$(find com2009_simulations)/launch/task4.launch" />
+  <!-- <include file="$(find com2009_simulations)/launch/task4.launch" /> -->
 
   <arg name="map_file" default=" $(find com2009_team42)/maps/task4_map.yaml"/>
   <arg name="initial_pose_x" default="0.0"/>
@@ -30,16 +30,17 @@ https://github.com/ROBOTIS-GIT/turtlebot3/blob/master/turtlebot3_navigation/laun
   </include>
 
   
+
+
+  <!-- action nodes -->
+  <node pkg="com2009_team42" type="explore_server.py" name="explore_server" output="screen">
+    <param name="target_colour" value="$(arg target_colour)"/>
+  </node>
   <!-- reference: https://wiki.ros.org/gmapping -->
   <!-- Gmapping SLAM -->
   <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch">
     <arg name="model" value="$(arg model)" />
   </include>
-
-  <!-- action nodes -->
-  <node pkg="com2009_team42" type="explore_server.py" name="explore_server" output="screen">
-  </node>
-
 
   <node pkg="com2009_team42" type="map_builder.py" name="map_builder" output="screen">
   </node>

@@ -217,6 +217,9 @@ class Lidar():
         self.subsets.l2, self.subsets.l2Array = self.get_subset(40, 60)
         self.subsets.l3, self.subsets.l3Array = self.get_subset(70, 85)
         self.subsets.l4, self.subsets.l4Array = self.get_subset(95, 110)
+
+        self.left_obstacle = (self.subsets.l1Array + self.subsets.l2Array)
+        self.right_obstacle  = (self.subsets.r1Array + self.subsets.r2Array)
         
         self.wait_for_lidar = False
 

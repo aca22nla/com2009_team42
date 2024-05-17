@@ -37,7 +37,7 @@ class TestColourSearch():
         rospy.loginfo(f"TASK 4 BEACON: The target is {self.target_colour}.")
 
         self.camera_subscriber = rospy.Subscriber(
-            "/camera/rgb/image_raw",
+            "/camera/color/image_raw",
             Image, self.camera_callback
         )
         self.cvbridge_interface = CvBridge()
@@ -58,7 +58,7 @@ class TestColourSearch():
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdown_ops)
 
-        self.rate = rospy.Rate(5)
+        self.rate = rospy.Rate(10)
         
         self.m00 = 0
         self.m00_min = 10000
@@ -69,17 +69,17 @@ class TestColourSearch():
 
     def get_hsv_threshold(self, target_colour):
         if target_colour == "blue":
-            return ((115, 224, 100), (130, 255, 255))
-            # return ((102.027, 221.155, 100), (105.186, 255, 255))
+            # return ((115, 224, 100), (130, 255, 255))
+            return ((102.027, 221.155, 100), (105.186, 255, 255))
         elif target_colour == "green":
-            return ((50, 150, 100), (65, 255, 255))
-            # return ((82.7, 196, 100), (89.5, 254, 255))
+            # return ((50, 150, 100), (65, 255, 255))
+            return ((82.7, 196, 100), (89.5, 254, 255))
         elif target_colour == "red":
-            return ((0, 185, 100), (10, 255, 255))
-            # return ((2.032, 197.604, 100), (4.029, 252.456, 255))
+            # return ((0, 185, 100), (10, 255, 255))
+            return ((2.032, 197.604, 100), (4.029, 252.456, 255))
         elif target_colour == "yellow":
-            return ((50, 150, 100), (65, 255, 255))
-            # return ((24.8727, 201.634, 100), (26.031, 250.234, 255))
+            # return ((50, 150, 100), (65, 255, 255))
+            return ((24.8727, 201.634, 100), (26.031, 250.234, 255))
         else:
             rospy.logerr(f"Invalid target colour: {target_colour}")
             return None, None
@@ -113,12 +113,12 @@ class TestColourSearch():
                 print(e)
             
             height, width, _ = cv_img.shape
-            crop_width = width - 400
-            crop_height = 600
-            crop_x = int((width/2) - (crop_width/2))
-            crop_y = int((height/2) - (crop_height/2))
+            crop_height = height - 400
+            crop_width = 600
+            crop_y = int((width/2) - (crop_width/2))
+            crop_x = int((height/2) - (crop_height/2))
 
-            crop_img = cv_img[crop_y:crop_y+crop_height, crop_x:crop_x+crop_width]
+            crop_img = cv_img[crop_x:crop_x+crop_width, crop_y:crop_y+crop_height]
             hsv_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
             mask = cv2.inRange(hsv_img, self.target_hsv_lower, self.target_hsv_upper)
 

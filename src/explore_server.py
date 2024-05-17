@@ -14,9 +14,11 @@ class RobotExplorer():
 
         self.rate = rospy.Rate(10)
         self.target_colour = rospy.get_param("~target_colour", "")
+        rospy.loginfo(f"Target Color: {self.target_colour}")
         self.colour_search = None
         if self.target_colour in ["yellow", "red", "green", "blue"]:
             self.colour_search = TestColourSearch(self.target_colour)
+            print(f"Colour search initialized {self.target_colour}")
         
         # functions from the waffle.py module:
         self.motion = waffle.Motion(debug = True)
@@ -26,7 +28,7 @@ class RobotExplorer():
 
 
         self.min_front_distance = 0.4
-        self.min_side_distance = 0.25
+        self.min_side_distance = 0.32
 
         self.state = "exploring"  # Initialize the state
         rospy.loginfo("The 'Explore Server' is active...")
@@ -41,7 +43,7 @@ class RobotExplorer():
         nmax_angular_velocity = -1.6  # Minimum angular velocity in radians per second
         
         # Calculate angular velocity based on the orientation difference
-        angular_velocity = orientation_difference
+        angular_velocity = orientation_difference * 2
         
         # Limit angular velocity to the maximum allowed value
         if angular_velocity > pmax_angular_velocity:
@@ -55,14 +57,41 @@ class RobotExplorer():
         self.motion.publish_velocity()
 
     def avoid_obstacle(self):
-        angular_velocity = self.calculate_angular_velocity(self.closest_object)
-        self.motion.set_velocity(linear=0.0, angular=angular_velocity)
-        self.motion.publish_velocity()
+        #object too near
+        
+
+        if self.closest_object <= self.min_front_distance and self.right_obstacle <= self.min_side_distance:
+            self.motion.set_velocity(linear=0.0, angular=1.6)
+            self.motion.publish_velocity()
+            print("Right corner. Turn left")
+        elif self.closest_object <= self.min_front_distance and self.left_obstacle <= self.min_side_distance:
+            self.motion.set_velocity(linear=0.0, angular=-1.6)
+            self.motion.publish_velocity()
+            print("Left corner. Turn right")
+        elif self.closest_object <= self.min_front_distance:
+            angular_velocity = self.calculate_angular_velocity(self.closest_object)
+            self.motion.set_velocity(linear=0.0, angular=angular_velocity)
+            self.motion.publish_velocity()
+        elif self.right_obstacle <= self.min_side_distance:
+            self.motion.set_velocity(linear=0.1, angular=0.5)
+            self.motion.publish_velocity()
+            print("Approaching right obstacle")
+        elif self.left_obstacle <= self.min_side_distance:
+            self.motion.set_velocity(linear=0.1, angular=-0.5)
+            self.motion.publish_velocity()
+            print("Approaching left obstacle")
+        if self.closest_object <= 0.25 or self.left_obstacle <= 0.25 or self.right_obstacle <= 0.25:
+            self.motion.set_velocity(linear=-0.1, angular=0.0)
+            self.motion.publish_velocity()
+            print("Too near. Move backwards")
+
+
+    
 
     def check_obstacles(self):
         self.closest_object = min(self.lidar.subsets.frontArray)
-        self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
-        self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
+        self.right_obstacle = min(self.lidar.right_obstacle)
+        self.left_obstacle = min(self.lidar.left_obstacle)
 
     def detect_beacon(self):
         return self.colour_search.is_beacon_detected()
@@ -72,6 +101,8 @@ class RobotExplorer():
 
         while not rospy.is_shutdown():
             self.check_obstacles()
+
+            
 
             if self.target_colour and self.colour_search:
 
@@ -94,6 +125,11 @@ class RobotExplorer():
                 elif self.state == "exploring":
                     self.explore()
 
+                
+            
+
+                
+
             else: 
                 if self.closest_object <= self.min_front_distance:
                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
@@ -110,11 +146,13 @@ class RobotExplorer():
                 elif self.state == "exploring":
                     self.explore()
 
-
-
             img_data = self.colour_search.get_latest_img_data()
             if img_data is None:
                 rospy.logerr("No image data available")
+
+
+
+            
 
             self.rate.sleep()
 

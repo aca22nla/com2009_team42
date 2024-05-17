@@ -208,6 +208,9 @@ class Lidar():
         self.subsets.r2, self.subsets.r2Array = self.get_subset(300, 320)
         self.subsets.r3, self.subsets.r3Array = self.get_subset(275, 290)
         self.subsets.r4, self.subsets.r4Array = self.get_subset(250, 265)
+
+        self.right_side= np.concatenate(self.subsets.r1Array, self.subsets.r2Array)
+        self.left_side = np.concatenate(self.subsets.l1Array, self.subsets.l2Array)
         
         # Left (x4):
         self.subsets.l1, self.subsets.l1Array = self.get_subset(20, 40)

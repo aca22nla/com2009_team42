@@ -49,6 +49,25 @@ class MazeNav():
        
         # Check if right is empty
 
+        if self.right_dist > 0.5 :
+            print(f"Right area empty, turning right to find wall")
+            self.vel_controller.set_move_cmd(0.0, -1.0)
+            self.vel_controller.publish()
+            return
+                
+        # Check if there's an obstacle on the right side
+        if self.right_dist > self.min_side_distance and self.right_dist <= 0.5:
+            print(f"Finding the right wall")
+            self.vel_controller.set_move_cmd(0.26, -0.12)
+            self.vel_controller.publish()
+            return
+
+        # Follow the right wall
+        if self.right_dist > 0.23 and self.right_dist <= self.min_side_distance:
+            print(f"Following the right wall")
+            self.vel_controller.set_move_cmd(0.27, 0.0)
+            self.vel_controller.publish()
+            return
         
         if self.front_dist <= self.min_front_distance : 
             if self.left_dist <= 0.3 and self.right_dist <= 0.3:
@@ -71,27 +90,9 @@ class MazeNav():
                 # self.vel_controller.set_move_cmd(0.0, -0.5 )
                 # self.vel_controller.publish()
 
-        else:
+        
 
-            if self.right_dist > 0.5 :
-                print(f"Right area empty, turning right to find wall")
-                self.vel_controller.set_move_cmd(0.0, -1.0)
-                self.vel_controller.publish()
-                return
-                    
-            # Check if there's an obstacle on the right side
-            if self.right_dist > self.min_side_distance and self.right_dist <= 0.5:
-                print(f"Finding the right wall")
-                self.vel_controller.set_move_cmd(0.26, -0.12)
-                self.vel_controller.publish()
-                return
-
-            # Follow the right wall
-            if self.right_dist > 0.23 and self.right_dist <= self.min_side_distance:
-                print(f"Following the right wall")
-                self.vel_controller.set_move_cmd(0.27, 0.0)
-                self.vel_controller.publish()
-                return
+            
             
             
             

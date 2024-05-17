@@ -37,8 +37,8 @@ class RobotExplorer():
         orientation_difference = (orientation_difference + math.pi) % (2 * math.pi) - math.pi
         
         # Define the maximum allowed angular velocities
-        pmax_angular_velocity = 1.6  # Maximum angular velocity in radians per second
-        nmax_angular_velocity = -1.6  # Minimum angular velocity in radians per second
+        pmax_angular_velocity = 1.4  # Maximum angular velocity in radians per second
+        nmax_angular_velocity = -1.4  # Minimum angular velocity in radians per second
         
         # Calculate angular velocity based on the orientation difference
         angular_velocity = orientation_difference
@@ -61,8 +61,8 @@ class RobotExplorer():
 
     def check_obstacles(self):
         self.closest_object = min(self.lidar.subsets.frontArray)
-        self.right_obstacle = min(self.lidar.subsets.l1, self.lidar.subsets.l2)
-        self.left_obstacle = min(self.lidar.subsets.r1, self.lidar.subsets.r2)
+        self.right_obstacle = min(self.lidar.right_side)
+        self.left_obstacle = min(self.lidar.left_side)
 
     def detect_beacon(self):
         return self.colour_search.is_beacon_detected()
@@ -75,7 +75,7 @@ class RobotExplorer():
 
             if self.target_colour and self.colour_search:
 
-                if self.closest_object <= self.min_front_distance:
+                if self.closest_object <= self.min_front_distance or self.right_obstacle <= self.min_side_distance or self.left_obstacle <= self.min_side_distance:
                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
                     self.state = "avoiding_obstacle"
                     
@@ -95,7 +95,7 @@ class RobotExplorer():
                     self.explore()
 
             else: 
-                if self.closest_object <= self.min_front_distance:
+                if self.closest_object <= self.min_front_distance or self.right_obstacle <= self.min_side_distance or self.left_obstacle <= self.min_side_distance:
                     rospy.loginfo("Obstacle detected. Avoiding obstacle")
                     self.state = "avoiding_obstacle"
                     
